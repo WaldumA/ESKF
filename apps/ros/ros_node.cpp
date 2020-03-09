@@ -4,6 +4,7 @@
 #include "ros_node.h"
 #include "chrono"
 
+
 using namespace eskf;
 using namespace Eigen;
 
@@ -17,7 +18,7 @@ const Matrix3d returnStaticRotationFromIMUtoBodyFrame(const Vector3d& roll_pitch
     return static_S_a;
 }
 */
-
+/*
 double meanOfVector(const std::vector<double>& vec)
 {
   double sum = 0;
@@ -50,7 +51,7 @@ double stanardDeviationOfVector(const std::vector<double>& vec)
 
   return std::sqrt(square_sum_of_difference / (len - 1));
 }
-
+*/
 void setIMUTopicNameFromYaml(std::string& imu_topic_name)
 {
   if (ros::param::has("/imu_topic"))
@@ -162,7 +163,6 @@ ESKF_Node::ESKF_Node(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
   std::string dvl_topic{ "" };
   std::string pressureZ_topic{ "" };
   int publish_rate{ 125 };
-
   // const parametersInESKF parameters = loadParametersFromYamlFile();
   // eskf_.setParametersInESKF(parameters);
 
@@ -174,6 +174,10 @@ ESKF_Node::ESKF_Node(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
   setPublishrateFromYaml(publish_rate);
 
   ROS_INFO("Subscribing to IMU topic: %s", imu_topic.c_str());
+
+  // Set variables
+
+
   // Subscribe to IMU
   subscribeIMU_ = nh_.subscribe<sensor_msgs::Imu>(imu_topic, 1000, &ESKF_Node::imuCallback, this,
                                                   ros::TransportHints().tcpNoDelay(true));
@@ -186,13 +190,27 @@ ESKF_Node::ESKF_Node(const ros::NodeHandle& nh, const ros::NodeHandle& pnh)
   subscribePressureZ_ = nh_.subscribe<nav_msgs::Odometry>(pressureZ_topic, 1000, &ESKF_Node::pressureZCallback, this,
                                                           ros::TransportHints().tcpNoDelay(true));
 
+  
+
+
   ROS_INFO("Publishing State");
   publishPose_ = nh_.advertise<nav_msgs::Odometry>("pose", 1);
 
   pubTImer_ = nh_.createTimer(ros::Duration(1.0f / publish_rate), &ESKF_Node::publishPoseState, this);
 }
 
+// Subscribe to Sonar
+
+void ESKF_Node::sonarCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+  sonar_data.angle_min = msg->angle_min;
+  sonar_data.angle_max = msg->angle_max;
+  sonar_data.angle_increment = msg->angle_increment;
+  sonar_data.ranges = msg->ranges;
+  do_slam_update = true;
+}
 // IMU Subscriber
+
 void ESKF_Node::imuCallback(const sensor_msgs::Imu::ConstPtr& imu_Message_data)
 {
 
@@ -247,9 +265,6 @@ void ESKF_Node::imuCallback(const sensor_msgs::Imu::ConstPtr& imu_Message_data)
 	
 	if(execution_time_vector_.size() == 1000 && publish_execution_time_ == true)
 	{
-		std::cout<<"Max value: "<<maxOfVector(execution_time_vector_)<<std::endl;
-		std::cout<<"Mean: "<<meanOfVector(execution_time_vector_)<<std::endl;
-		std::cout<<"STD: "<<stanardDeviationOfVector(execution_time_vector_)<<std::endl;
 		publish_execution_time_ = false;
 	}
 	else
@@ -295,6 +310,13 @@ void ESKF_Node::pressureZCallback(const nav_msgs::Odometry::ConstPtr& pressureZ_
 
 void ESKF_Node::publishPoseState(const ros::TimerEvent&)
 {
+
+  if (do_slam_update == true) {
+
+
+
+
+  }
   nav_msgs::Odometry odom_msg;
   static size_t trace_id{ 0 };
 

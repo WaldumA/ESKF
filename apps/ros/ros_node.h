@@ -6,6 +6,9 @@
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
 #include "nav_msgs/Odometry.h"
+#include "eskf-slam.h"
+#include <sensor_msgs/LaserScan.h>
+#include <vector>
 
 const Eigen::Matrix3d R_ACC((Eigen::Matrix3d() << 4, 0, 0, 0, 4, 0, 0, 0, 4).finished());
 const Eigen::Matrix3d R_ACCBIAS((Eigen::Matrix3d() << 6e-5, 0, 0, 0, 6e-5, 0, 0, 0, 6e-5).finished());
@@ -46,6 +49,11 @@ private:
 
   eskf::ESKF eskf_;
 
+  // Variables for SLAM
+  bool do_slam_update;
+  sensor_msgs::LaserScan sonar_data;
+  std::vector<ESKF_SLAM_MAP> local_maps;
+
   // Load from Yaml file
   eskf::parametersInESKF loadParametersFromYamlFile();
 
@@ -53,17 +61,19 @@ private:
   ros::Subscriber subcribeDVL_;
   ros::Subscriber subscribeIMU_;
   ros::Subscriber subscribePressureZ_;
+  ros::Subscriber subscribeSonar_;
   ros::Timer pubTImer_;
 
   // ROS publisher
   ros::Publisher publishPose_;
+  ros::Publisher publishMap_;
 
   // Callbacks
   void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_Message_data);
   void dvlCallback(const nav_msgs::Odometry::ConstPtr& dvl_Message_data);
   void publishPoseState(const ros::TimerEvent&);
   void pressureZCallback(const nav_msgs::Odometry::ConstPtr& pressureZ_Message_data);
-
+  void sonarCallback(const sensor_msgs::LaserScan::ConstPtr& msg);
 
 
   // Execution time
@@ -72,6 +82,4 @@ private:
 
 };
 
-double meanOfVector(const std::vector<double>& vec);
-double maxOfVector(const std::vector<double>& vec);
-double stanardDeviationOfVector(const std::vector<double>& vec);
+
